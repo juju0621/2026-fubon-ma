@@ -40,6 +40,10 @@ pip install -r requirements.txt
 
 ## 🏃 Usage
 
+### 0. Data preparation
+
+將 **data.csv** 放入專案目錄下
+
 ### 1. Run Problem 1
 
 ```bash
@@ -47,7 +51,7 @@ chmod +x run_rollover.sh
 ./run_rollover.sh
 ```
 
-### 1. Run Problem 2
+### 2. Run Problem 2
 
 ```bash
 chmod +x run_strategy.sh
