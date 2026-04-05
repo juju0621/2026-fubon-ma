@@ -5,9 +5,6 @@
 - [Problem](#-problem)
 - [Installation](#-installation)
 - [Usage](#-usage)
-- [File Structure](#-file-structure)
-- [Dependencies](#-dependencies)
-- [License](#-license)
 
 ---
 
@@ -23,8 +20,8 @@
 ### 1. Clone the repository
 
 ```bash
-git clone https://github.com/yourusername/fubon.git
-cd fubon
+git clone https://github.com/juju0621/2026-fubon-ma.git
+cd 2026-fubon-ma
 ```
 
 ### 2. Create a virtual environment
@@ -39,4 +36,20 @@ source .venv/bin/activate   # macOS/Linux
 
 ```bash
 pip install -r requirements.txt
+```
+
+## 🏃 Usage
+
+### 1. Run Problem 1
+
+```bash
+chmod +x run_rollover.sh
+./run_rollover.sh
+```
+
+### 1. Run Problem 2
+
+```bash
+chmod +x run_strategy.sh
+./run_strategy.sh
 ```
