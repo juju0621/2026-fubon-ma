@@ -1,62 +1,4 @@
 #!/usr/bin/env python3
-"""
-hmm_vol_regime_strategy.py  v2.2
-=================================
-FITX HMM Multi-Regime Volatility Strategy  —  "VolRegime CTA"
-
-改進重點 v2.2 (日內化)
-──────────────────────
-1. 日內信號架構：信號在每個 EXEC_RESAMPLE_MIN 分鐘 K 棒評估（預設 30 分鐘）
-     → 一天可觸發多次（上限由 min_hold_bars × exec_resample_min 控制）
-     → 特徵計算仍用 5 分鐘 K 棒，執行層合併至 30 分鐘
-2. 交易時段過濾：09:15–13:15（可配置），避開開盤雜訊與收盤 MOC 流量
-     → 趨勢與均值回歸機制統一適用
-3. 日內反鞭刑（anti-whipsaw）：相同方向訊號在 min_hold_bars 個執行棒內
-     不允許反轉，防止 30 分鐘級過度交易
-4. PCA 分析圖（第 08 圖）：解釋變異量、特徵載荷量熱圖、特徵重要性排名
-     → 報告中補充 PCA 降維的原因與結果
-
-改進重點 v2.1
-─────────────
-1. 取消趨勢機制的EOD強制平倉 → 允許隔夜留倉，大幅降低交易頻率與TC
-2. 進場門檻 (須同時滿足)
-     • HMM 信心度   conf > HMM_CONF_THRESHOLD  (dominant state probability)
-     • 機制持續性   同一機制連續 ≥ REGIME_PERSIST_DAYS 個交易日
-     • 動量強度     |momentum| z-score > MOM_ZSCORE_THRESH  (趨勢機制)
-       或 VWAP偏離  |vwap_dev| z-score > VWAP_MR_ZSCORE      (均值回歸機制)
-3. 機制變換出場 → 當前機制 ≠ 進場機制時立即出場 (at bar open)
-4. CHAOS 機制改善
-     • 僅在波動率收縮時進場 (vol_expansion < 1.2)
-     • 獲利目標 1.5 ATR (舊: 0.5 ATR) → 正期望值結構
-     • 停損      0.8 ATR (舊: 1.0 ATR)
-     • 每日最多 1 筆 CHAOS 交易
-5. STORM 進場過濾
-     • 價格不能太偏離VWAP (|vwap_dev| < 0.3%) → 不追高殺低
-     • 波動擴張適中 (1.0 < vol_expansion < 2.2) → 不在最混亂時入場
-     • 須有成交量配合 (vol_surprise > -0.3)
-6. 機制持續性判斷 (已整合進門檻)
-
-Regime → Alpha Engine
-───────────────────────────────────────────────────────────────────
- BULL_QUIET   低波動 + 上升趨勢   → EWM動量追蹤 LONG  + Carry調整
- BEAR_QUIET   低波動 + 下降趨勢   → EWM動量追蹤 SHORT + Carry調整
- STORM        高波動 + 強方向性   → 縮減倉位CTA (需VWAP確認)
- CHAOS        高波動 + 均值回歸   → VWAP偏離淡化 (需波動收縮)
-
-交易成本模型 (台灣期交所 FITX)
- 手續費   : NT$100 RT / 口 (券商 + 交易所)
- 期交稅   : 0.002% × 成交金額 × 2 (進出各一次，隨價格變動)
- 滑點     : NT$200 RT / 口 (一個升降單位來回，一般盤中)
-           : NT$100 RT / 口 (跨月價差單換倉)
-
-Walk-forward: 訓練63天 / 測試21天 / 步進21天
-
-所有DEBUG輸出 → logs/hmm_regime_<ts>.log
-報告 (繁體中文) → output/hmm_regime/report.md
-
-Author: Quantitative Research  |  2026-04-05
-"""
-
 from __future__ import annotations
 
 import json
@@ -82,7 +24,7 @@ from sklearn.preprocessing import StandardScaler
 warnings.filterwarnings("ignore")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# LOGGING  — file=DEBUG, console=WARNING (不要print滿天飛)
+# LOGGING 
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def setup_logging(log_dir: str = "logs") -> logging.Logger:
